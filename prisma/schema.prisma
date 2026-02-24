@@ -1,0 +1,125 @@
+// Prisma 7 schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Experience {
+  id          String   @id @default(cuid())
+  company     String
+  role        String
+  startDate   String
+  endDate     String?
+  location    String?
+  description String?
+  tags        String   @default("[]") // JSON array string
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  bullets Bullet[]
+}
+
+model Bullet {
+  id             String @id @default(cuid())
+  experienceId   String
+  text           String
+  tags           String @default("[]") // JSON array string
+  impactScore    Int    @default(5)
+  relevanceScore Int    @default(5)
+  metric         String?
+  order          Int    @default(0)
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  pitch     String
+  casestudy String?
+  githubUrl String?
+  demoUrl   String?
+  tags      String   @default("[]") // JSON array string
+  techStack String   @default("[]") // JSON array string
+  featured  Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Skill {
+  id          String @id @default(cuid())
+  name        String
+  group       String // "Languages" | "Tools" | "Platforms" | "Frameworks" | "Certifications"
+  proficiency Int    @default(3)
+  tags        String @default("[]") // JSON array string
+  order       Int    @default(0)
+}
+
+model Education {
+  id        String  @id @default(cuid())
+  school    String
+  degree    String
+  field     String?
+  startDate String
+  endDate   String?
+  gpa       String?
+  honors    String?
+  order     Int     @default(0)
+}
+
+model Certification {
+  id      String  @id @default(cuid())
+  name    String
+  issuer  String
+  date    String
+  expires String?
+  credUrl String?
+  order   Int     @default(0)
+}
+
+model Leadership {
+  id        String  @id @default(cuid())
+  org       String
+  role      String
+  startDate String
+  endDate   String?
+  bullets   String  @default("[]") // JSON array string
+  tags      String  @default("[]") // JSON array string
+  order     Int     @default(0)
+}
+
+model Loadout {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  isDefault   Boolean  @default(false)
+  templateId  String   @default("ats-classic")
+  exportRules String   @default("{}") // JSON: { minBullets, maxBulletsPerRole, maxProjects, fontScaleRange, lineHeightRange }
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items LoadoutItem[]
+}
+
+// Polymorphic join table — entityType + entityId reference entities by app-layer lookup
+model LoadoutItem {
+  id                String  @id @default(cuid())
+  loadoutId         String
+  entityType        String  // "experience"|"project"|"skill"|"education"|"certification"|"leadership"
+  entityId          String  // ID of the referenced entity (resolved in app code)
+  order             Int     @default(0)
+  pinned            Boolean @default(false)
+  bulletCapOverride Int?    // Override maxBulletsPerRole for this experience in this loadout
+
+  loadout Loadout @relation(fields: [loadoutId], references: [id], onDelete: Cascade)
+
+  @@unique([loadoutId, entityType, entityId])
+}

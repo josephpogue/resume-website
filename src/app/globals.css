@@ -1,0 +1,205 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Theme CSS Variables ──────────────────────────────────────────────────── */
+:root {
+  --bg:      #0f1923;
+  --surface: #1a2332;
+  --border:  rgba(255, 70, 85, 0.2);
+  --accent:  #ff4655;
+  --accent2: #00ffff;
+  --text:    #ece8e1;
+  --muted:   #7b8ea0;
+  --darker:  #0a1017;
+  --navy:    #1a2332;
+  --blue:    #1f3044;
+}
+
+[data-recruiter='true'] {
+  --bg:      #ffffff;
+  --surface: #f8fafc;
+  --border:  #e2e8f0;
+  --accent:  #2563eb;
+  --accent2: #0ea5e9;
+  --text:    #1e293b;
+  --muted:   #64748b;
+  --darker:  #f1f5f9;
+  --navy:    #f8fafc;
+  --blue:    #eff6ff;
+}
+
+/* ─── Base Styles ──────────────────────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-rajdhani, 'Rajdhani', system-ui, sans-serif);
+  font-size: 1rem;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1 {
+  font-family: var(--font-orbitron, 'Orbitron', sans-serif);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+}
+
+h2 {
+  font-family: var(--font-orbitron, 'Orbitron', sans-serif);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+
+h3, h4 {
+  font-family: var(--font-rajdhani, 'Rajdhani', sans-serif);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+button {
+  font-family: var(--font-rajdhani, 'Rajdhani', sans-serif);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* In recruiter mode, use professional fonts */
+[data-recruiter='true'] body {
+  font-family: var(--font-inter, system-ui, sans-serif);
+}
+[data-recruiter='true'] h1,
+[data-recruiter='true'] h2 {
+  font-family: var(--font-inter, system-ui, sans-serif);
+  text-transform: none;
+  letter-spacing: normal;
+}
+[data-recruiter='true'] button {
+  font-family: var(--font-inter, system-ui, sans-serif);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* ─── Valorant Utility Classes ─────────────────────────────────────────────── */
+@layer utilities {
+  .text-accent        { color: var(--accent); }
+  .text-accent2       { color: var(--accent2); }
+  .text-themed        { color: var(--text); }
+  .text-muted-themed  { color: var(--muted); }
+
+  .bg-surface         { background-color: var(--surface); }
+  .bg-themed          { background-color: var(--bg); }
+  .bg-darker          { background-color: var(--darker); }
+  .border-themed      { border-color: var(--border); }
+
+  .glow-red  { box-shadow: 0 0 8px #ff4655, 0 0 20px #ff465540; }
+  .glow-cyan { box-shadow: 0 0 8px #00ffff, 0 0 20px #00ffff40; }
+
+  /* Clipped corners — double cut (top-right + bottom-left) matching reference */
+  .clip-corner {
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  }
+  .clip-corner-sm {
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  }
+  /* Single cut (top-right only) for some cards */
+  .clip-corner-tr {
+    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%);
+  }
+
+  .neon-red  { color: #ff4655; text-shadow: 0 0 8px #ff465580; }
+  .neon-cyan { color: #00ffff; text-shadow: 0 0 8px #00ffff80; }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(255, 70, 85, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 70, 85, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) var(--surface);
+  }
+  .scrollbar-thin::-webkit-scrollbar       { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track  { background: var(--surface); }
+  .scrollbar-thin::-webkit-scrollbar-thumb  { background: var(--accent); border-radius: 2px; }
+
+  /* Staggered entrance animation helpers */
+  .anim-fade-up {
+    opacity: 0;
+    animation: fade-up 0.6s ease forwards;
+  }
+  .anim-delay-1 { animation-delay: 0.15s; }
+  .anim-delay-2 { animation-delay: 0.3s; }
+  .anim-delay-3 { animation-delay: 0.45s; }
+  .anim-delay-4 { animation-delay: 0.6s; }
+  .anim-delay-5 { animation-delay: 0.75s; }
+  .anim-delay-6 { animation-delay: 0.9s; }
+}
+
+/* ─── Section Header Accent Line ───────────────────────────────────────────── */
+.section-header {
+  position: relative;
+  padding-bottom: 0.375rem;
+  margin-bottom: 0.75rem;
+}
+.section-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+/* ─── Keyframes ──────────────────────────────────────────────────────────── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes spin-slow-reverse {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+
+@keyframes cornerBlink {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 1; }
+}
+
+@keyframes glowPulse {
+  0%   { box-shadow: 0 0 4px #ff4655, 0 0 8px #ff465540; }
+  100% { box-shadow: 0 0 12px #ff4655, 0 0 24px #ff465560; }
+}
+
+@keyframes scanLine {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes expand-width {
+  from { width: 0; }
+  to   { width: var(--target-width, 100%); }
+}
+
+/* ─── Print ─────────────────────────────────────────────────────────────────── */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; color: black; }
+}
