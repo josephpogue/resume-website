@@ -5,7 +5,7 @@ export const siteConfig = {
   email: 'joseph.pogue@example.com',
   socials: {
     github: 'https://github.com/josephpogue',
-    linkedin: 'https://linkedin.com/in/josephpogue',
+    linkedin: 'https://www.linkedin.com/in/joseph-pogue-591442178/',
   },
   highlights: [
     { label: 'Years of Experience', value: '5+' },

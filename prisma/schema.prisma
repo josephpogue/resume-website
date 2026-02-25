@@ -109,6 +109,18 @@ model Loadout {
   items LoadoutItem[]
 }
 
+// Private AI context layer — brain dump per entity, never shown publicly
+model ContextNote {
+  id          String   @id @default(cuid())
+  entityType  String   // "experience" | "project" | "skill"
+  entityId    String
+  content     String   // Rich text blob — detailed notes for AI context
+  aiGenerated Boolean  @default(false)
+  source      String   @default("manual") // "import" | "on-demand" | "manual"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 // Polymorphic join table — entityType + entityId reference entities by app-layer lookup
 model LoadoutItem {
   id                String  @id @default(cuid())

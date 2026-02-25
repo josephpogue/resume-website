@@ -1,6 +1,6 @@
 export function TacticalGrid() {
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <div className="tactical-grid-wrapper absolute inset-0 overflow-hidden pointer-events-none">
       {/* Grid pattern */}
       <div className="absolute inset-0 bg-grid" />
 

@@ -4,18 +4,30 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { Crosshair, Menu, X, Github, Linkedin } from 'lucide-react'
-import { RecruiterModeToggle } from '@/components/public/RecruiterModeToggle'
+import { ProfileModeToggle } from '@/components/public/ProfileModeToggle'
+import { useProfileMode } from '@/hooks/useProfileMode'
 import { siteConfig } from '@/lib/site-config'
 
-const navLinks = [
-  { href: '/resume',   label: 'RESUME' },
-  { href: '/missions', label: 'MISSIONS' },
-  { href: '/contact',  label: 'CONTACT' },
-]
+interface NavbarProps {
+  careerMode: boolean
+  toggle: () => void
+}
 
-function Navbar() {
+function Navbar({ careerMode, toggle }: NavbarProps) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  const navLinks = careerMode
+    ? [
+        { href: '/resume',   label: 'RESUME' },
+        { href: '/missions', label: 'PROJECTS' },
+        { href: '/contact',  label: 'CONTACT' },
+      ]
+    : [
+        { href: '/loadout',  label: 'LOADOUT' },
+        { href: '/hobbies',  label: 'HOBBIES' },
+        { href: '/contact',  label: 'CONTACT' },
+      ]
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50">
@@ -60,7 +72,7 @@ function Navbar() {
             })}
           </div>
 
-          {/* Right side: status + recruiter toggle + mobile btn */}
+          {/* Right side: status + profile toggle + mobile btn */}
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
@@ -72,7 +84,7 @@ function Navbar() {
               </span>
             </div>
 
-            <RecruiterModeToggle />
+            <ProfileModeToggle careerMode={careerMode} toggle={toggle} />
 
             <button
               className="md:hidden text-[var(--text)] hover:text-[var(--accent)] transition-colors"
@@ -119,9 +131,11 @@ export default function PublicLayout({
 }: {
   children: React.ReactNode
 }) {
+  const { careerMode, toggle } = useProfileMode()
+
   return (
     <div className="min-h-screen bg-[var(--bg)]">
-      <Navbar />
+      <Navbar careerMode={careerMode} toggle={toggle} />
 
       {/* Push content below fixed navbar (16px top line + 64px nav = 66px) */}
       <main className="pt-[66px]">

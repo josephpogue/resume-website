@@ -16,7 +16,7 @@
   --blue:    #1f3044;
 }
 
-[data-recruiter='true'] {
+[data-career='true'] {
   --bg:      #ffffff;
   --surface: #f8fafc;
   --border:  #e2e8f0;
@@ -72,17 +72,17 @@ button {
   letter-spacing: 0.05em;
 }
 
-/* In recruiter mode, use professional fonts */
-[data-recruiter='true'] body {
+/* In career mode, use professional fonts */
+[data-career='true'] body {
   font-family: var(--font-inter, system-ui, sans-serif);
 }
-[data-recruiter='true'] h1,
-[data-recruiter='true'] h2 {
+[data-career='true'] h1,
+[data-career='true'] h2 {
   font-family: var(--font-inter, system-ui, sans-serif);
   text-transform: none;
   letter-spacing: normal;
 }
-[data-recruiter='true'] button {
+[data-career='true'] button {
   font-family: var(--font-inter, system-ui, sans-serif);
   text-transform: none;
   letter-spacing: normal;
@@ -145,6 +145,12 @@ button {
   .anim-delay-5 { animation-delay: 0.75s; }
   .anim-delay-6 { animation-delay: 0.9s; }
 }
+
+/* ─── Dual-Identity Content Visibility ─────────────────────────────────────── */
+.career-only { display: none; }
+[data-career='true'] .career-only { display: block; }
+[data-career='true'] .player-only { display: none; }
+[data-career='true'] .tactical-grid-wrapper { display: none; }
 
 /* ─── Section Header Accent Line ───────────────────────────────────────────── */
 .section-header {

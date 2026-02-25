@@ -84,6 +84,19 @@ export interface Leadership {
   order: number
 }
 
+// ─── Context Note ────────────────────────────────────────────────────────────
+
+export interface ContextNote {
+  id: string
+  entityType: string
+  entityId: string
+  content: string
+  aiGenerated: boolean
+  source: 'import' | 'on-demand' | 'manual'
+  createdAt: string
+  updatedAt: string
+}
+
 // ─── Loadout Types ──────────────────────────────────────────────────────────
 
 export type EntityType =

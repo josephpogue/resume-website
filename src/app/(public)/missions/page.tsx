@@ -20,21 +20,39 @@ export default async function MissionsPage() {
         <TacticalGrid />
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg)] to-[var(--navy)]/20" />
         <div className="relative max-w-7xl mx-auto px-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-[2px] bg-[var(--accent)]" />
-            <span
-              className="text-[var(--accent)] tracking-[0.3em] uppercase"
-              style={{ fontFamily: 'var(--font-mono-val, monospace)', fontSize: '0.7rem' }}
-            >
-              // OPERATIONS LOG
-            </span>
+          {/* Player mode header */}
+          <div className="player-only">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-[2px] bg-[var(--accent)]" />
+              <span
+                className="text-[var(--accent)] tracking-[0.3em] uppercase"
+                style={{ fontFamily: 'var(--font-mono-val, monospace)', fontSize: '0.7rem' }}
+              >
+                // OPERATIONS LOG
+              </span>
+            </div>
+            <h1 className="text-[var(--text)] mb-3" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
+              Mission <span className="text-[var(--accent)]">Log</span>
+            </h1>
+            <p className="text-[var(--muted)]" style={{ fontSize: '0.95rem' }}>
+              Projects, case studies, and open-source operations
+            </p>
           </div>
-          <h1 className="text-[var(--text)] mb-3" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
-            Mission <span className="text-[var(--accent)]">Log</span>
-          </h1>
-          <p className="text-[var(--muted)]" style={{ fontSize: '0.95rem' }}>
-            Projects, case studies, and open-source operations
-          </p>
+          {/* Career mode header */}
+          <div className="career-only">
+            <p
+              className="text-[var(--accent)] mb-3 font-semibold tracking-wide"
+              style={{ fontSize: '0.875rem' }}
+            >
+              PORTFOLIO
+            </p>
+            <h1 className="text-[var(--text)] mb-3" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
+              Projects
+            </h1>
+            <p className="text-[var(--muted)]" style={{ fontSize: '0.95rem' }}>
+              Selected projects, open-source work, and case studies
+            </p>
+          </div>
         </div>
       </div>
 

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { deserializeExperience, deserializeBullet } from '@/lib/serialize'
 import { BulletBankEditor } from '@/components/admin/BulletBankEditor'
+import { ContextNotesEditor } from '@/components/admin/ContextNotesEditor'
 import { formatDateRange } from '@/lib/utils'
 import { ArrowLeft } from 'lucide-react'
 
@@ -45,10 +46,15 @@ export default async function ExperienceDetailPage({
         <BulletBankEditor experienceId={exp.id} initialBullets={bullets} />
       </div>
 
-      {/* Private notes */}
+      {/* Context Intel */}
+      <div className="bg-[var(--surface)] border border-[var(--border)] p-4 clip-corner">
+        <ContextNotesEditor entityType="experience" entityId={exp.id} />
+      </div>
+
+      {/* Private notes (legacy description field) */}
       {exp.description && (
         <div className="bg-[var(--surface)] border border-[var(--border)] p-4">
-          <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-2">Private Notes</h3>
+          <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-2">Legacy Notes</h3>
           <p className="text-sm text-[var(--text)] whitespace-pre-wrap">{exp.description}</p>
         </div>
       )}

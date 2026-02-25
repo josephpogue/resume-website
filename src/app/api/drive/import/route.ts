@@ -15,7 +15,8 @@ Schema (only include sections that have data in the document):
     "location": "string | null",
     "description": "brief role summary or null",
     "tags": ["relevant skill/domain keywords"],
-    "bullets": [{ "text": "achievement statement", "metric": "quantified result or null" }]
+    "bullets": [{ "text": "achievement statement", "metric": "quantified result or null" }],
+    "contextNotes": "2-4 paragraphs of rich private context: day-to-day responsibilities, technical depth, team context, challenges, impact — things that would not fit on a resume but provide important background for AI to generate better bullets later. Write in first person."
   }],
   "education": [{
     "school": "string",
@@ -105,7 +106,7 @@ export async function POST(req: NextRequest) {
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 8192,
+    max_tokens: 16384,
     messages: [{ role: 'user', content: messageContent }],
   })
 

@@ -30,6 +30,7 @@ interface ParsedExperience {
   company: string; role: string; startDate: string; endDate: string | null
   location: string | null; description: string | null; tags: string[]
   bullets: ParsedBullet[]
+  contextNotes?: string | null
 }
 interface ParsedEducation {
   school: string; degree: string; field: string | null
@@ -340,6 +341,15 @@ export default function ImportPage() {
                 tags: [],
                 impactScore: 5,
                 relevanceScore: 5,
+              })
+            }
+            if (exp.contextNotes) {
+              await post('/api/context-notes', {
+                entityType: 'experience',
+                entityId: created.id,
+                content: exp.contextNotes,
+                aiGenerated: true,
+                source: 'import',
               })
             }
             importResults.push({ key, ok: true })

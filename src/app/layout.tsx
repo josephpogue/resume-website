@@ -56,6 +56,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} ${orbitron.variable} ${rajdhani.variable} ${shareTechMono.variable} antialiased`}>
+        {/* Prevent flash of wrong theme on reload */}
+        {/* Career mode is default; only go to player mode if explicitly stored as 'false' */}
+        <script dangerouslySetInnerHTML={{ __html: `try{if(localStorage.getItem('profileMode')!=='false')document.documentElement.dataset.career='true'}catch(e){}` }} />
         {children}
       </body>
     </html>

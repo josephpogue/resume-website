@@ -15,6 +15,57 @@ export const metadata: Metadata = {
 
 const HIGHLIGHT_ICONS = [Briefcase, Code, Award, Server]
 
+function CareerHero() {
+  return (
+    <section className="relative min-h-[80vh] flex items-center border-b border-[var(--border)]">
+      <div className="relative max-w-7xl mx-auto px-6 py-20 w-full">
+        <div className="max-w-3xl">
+          <p
+            className="text-[var(--accent)] mb-4 font-semibold tracking-wide"
+            style={{ fontSize: '0.875rem' }}
+          >
+            Available for opportunities
+          </p>
+          <h1
+            className="text-[var(--text)] mb-6"
+            style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', lineHeight: 1.1 }}
+          >
+            {siteConfig.name.split(' ')[0]}{' '}
+            <span className="text-[var(--accent)]">
+              {siteConfig.name.split(' ').slice(1).join(' ')}
+            </span>
+          </h1>
+          <p
+            className="text-[var(--muted)] mb-4 font-medium"
+            style={{ fontSize: 'clamp(1rem, 2vw, 1.25rem)' }}
+          >
+            {siteConfig.title}
+          </p>
+          <p className="text-[var(--muted)]/80 max-w-lg mb-10" style={{ fontSize: '1rem' }}>
+            {siteConfig.tagline}
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <Link
+              href="/resume"
+              className="px-8 py-3 bg-[var(--accent)] text-white rounded hover:bg-[var(--accent)]/90 transition-colors font-medium"
+              style={{ fontSize: '0.95rem' }}
+            >
+              View Resume
+            </Link>
+            <Link
+              href="/missions"
+              className="px-8 py-3 border border-[var(--accent)]/40 text-[var(--accent)] rounded hover:bg-[var(--accent)]/10 transition-colors"
+              style={{ fontSize: '0.95rem' }}
+            >
+              See Projects
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export default async function HomePage() {
   const featuredRaw = await prisma.project.findMany({
     where: { featured: true },
@@ -26,13 +77,29 @@ export default async function HomePage() {
 
   return (
     <div className="overflow-hidden">
-      {/* Hero */}
-      <AgentCardHero />
 
-      {/* Stats / Highlights */}
-      <section className="relative py-16 border-y border-[var(--border)]">
+      {/* ── Hero ─────────────────────────────────────────────────────── */}
+      <div className="player-only">
+        <AgentCardHero />
+      </div>
+      <div className="career-only">
+        <CareerHero />
+      </div>
+
+      {/* ── Stats / Highlights ─────────────────────────────────────── */}
+
+      {/* Player mode stats */}
+      <section className="player-only relative py-16 border-y border-[var(--border)]">
         <div className="absolute inset-0 bg-[var(--navy)]/20" />
         <div className="relative max-w-7xl mx-auto px-6">
+          <div className="mb-6">
+            <span
+              className="text-[var(--accent)] tracking-[0.3em]"
+              style={{ fontFamily: 'var(--font-mono-val, monospace)', fontSize: '0.7rem' }}
+            >
+              // OPERATOR STATISTICS
+            </span>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {siteConfig.highlights.map(({ label, value }, i) => {
               const Icon = HIGHLIGHT_ICONS[i] ?? Briefcase
@@ -55,7 +122,6 @@ export default async function HomePage() {
                   >
                     {label.toUpperCase()}
                   </div>
-                  {/* Corner accent */}
                   <div className="absolute top-0 right-0 w-3 h-3 border-r-2 border-t-2 border-[var(--accent)]/0 group-hover:border-[var(--accent)]/40 transition-colors" />
                 </div>
               )
@@ -64,9 +130,42 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Featured Missions */}
+      {/* Career mode stats */}
+      <section className="career-only relative py-16 border-y border-[var(--border)]">
+        <div className="relative max-w-7xl mx-auto px-6">
+          <h2 className="text-[var(--text)] mb-8" style={{ fontSize: '1.25rem', fontWeight: 600 }}>
+            At a Glance
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+            {siteConfig.highlights.map(({ label, value }, i) => {
+              const Icon = HIGHLIGHT_ICONS[i] ?? Briefcase
+              return (
+                <div
+                  key={label}
+                  className="p-6 border border-[var(--border)] bg-[var(--surface)] rounded-lg hover:border-[var(--accent)]/40 transition-all duration-300"
+                >
+                  <Icon className="w-5 h-5 text-[var(--accent)] mb-3" />
+                  <div
+                    className="text-[var(--accent)] font-bold mb-1"
+                    style={{ fontSize: '2rem' }}
+                  >
+                    {value}
+                  </div>
+                  <div className="text-[var(--muted)]" style={{ fontSize: '0.875rem' }}>
+                    {label}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Featured Projects ──────────────────────────────────────── */}
+
+      {/* Player mode: Featured Missions */}
       {featured.length > 0 && (
-        <section className="relative py-24 px-6">
+        <section className="player-only relative py-24 px-6">
           <div className="max-w-7xl mx-auto">
             <SectionHeader
               label="// OPERATIONS"
@@ -92,8 +191,38 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* CTA Section */}
-      <section className="relative py-24 px-6 border-t border-[var(--border)]">
+      {/* Career mode: Featured Projects */}
+      {featured.length > 0 && (
+        <section className="career-only relative py-24 px-6">
+          <div className="max-w-7xl mx-auto">
+            <SectionHeader
+              label="SELECTED WORK"
+              title="Featured Projects"
+              subtitle="A selection of recent work and open-source contributions"
+            />
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featured.map(project => (
+                <MissionCard key={project.id} project={project} />
+              ))}
+            </div>
+            <div className="mt-10 text-center">
+              <Link
+                href="/missions"
+                className="inline-flex items-center gap-2 text-[var(--accent)] hover:text-[var(--text)] transition-colors"
+                style={{ fontSize: '0.875rem' }}
+              >
+                View All Projects
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── CTA ───────────────────────────────────────────────────── */}
+
+      {/* Player mode CTA */}
+      <section className="player-only relative py-24 px-6 border-t border-[var(--border)]">
         <div className="relative max-w-2xl mx-auto text-center">
           <div className="flex items-center justify-center gap-3 mb-6">
             <div className="w-8 h-[2px] bg-[var(--accent)]" />
@@ -124,6 +253,26 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* Career mode CTA */}
+      <section className="career-only relative py-24 px-6 border-t border-[var(--border)]">
+        <div className="relative max-w-2xl mx-auto text-center">
+          <h2 className="text-[var(--text)] mb-4" style={{ fontSize: '1.75rem' }}>
+            Let&apos;s Work Together
+          </h2>
+          <p className="text-[var(--muted)] mb-8" style={{ fontSize: '0.95rem' }}>
+            Open to new opportunities, collaborations, and interesting engineering challenges.
+          </p>
+          <Link
+            href="/contact"
+            className="inline-block px-10 py-4 bg-[var(--accent)] text-white rounded hover:bg-[var(--accent)]/90 transition-colors font-medium"
+            style={{ fontSize: '0.95rem' }}
+          >
+            Get in Touch
+          </Link>
+        </div>
+      </section>
+
     </div>
   )
 }
