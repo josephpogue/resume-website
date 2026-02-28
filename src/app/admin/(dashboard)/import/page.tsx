@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -14,6 +14,8 @@ import {
   ChevronUp,
   Link2,
   FolderOpen,
+  Upload,
+  HardDrive,
 } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -61,6 +63,7 @@ interface ParsedData {
 
 type ItemKey = string // `${section}.${index}`
 type ImportResult = { key: ItemKey; ok: boolean; error?: string }
+type ImportSource = 'drive' | 'local'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -83,6 +86,12 @@ function normalizeUrl(u: string | null | undefined): string | undefined {
 
 function formatModified(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 function loadScript(src: string): Promise<void> {
@@ -156,10 +165,19 @@ function ItemRow({
 export default function ImportPage() {
   const searchParams = useSearchParams()
   const oauthError = searchParams.get('error')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [status, setStatus] = useState<'loading' | 'connected' | 'disconnected'>('loading')
+  const [driveStatus, setDriveStatus] = useState<'loading' | 'connected' | 'disconnected'>('loading')
+  const [activeSource, setActiveSource] = useState<ImportSource>('drive')
+
+  // Drive source state
   const [selectedFile, setSelectedFile] = useState<DriveFile | null>(null)
   const [pickerLoading, setPickerLoading] = useState(false)
+
+  // Local source state
+  const [localFile, setLocalFile] = useState<File | null>(null)
+
+  // Shared parse/import state
   const [parsing, setParsing] = useState(false)
   const [parsedData, setParsedData] = useState<ParsedData | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
@@ -169,12 +187,21 @@ export default function ImportPage() {
 
   // ── Check Drive connection ──
   const checkConnection = useCallback(async () => {
-    setStatus('loading')
+    setDriveStatus('loading')
     const res = await fetch('/api/auth/google/token')
-    setStatus(res.ok ? 'connected' : 'disconnected')
+    setDriveStatus(res.ok ? 'connected' : 'disconnected')
   }, [])
 
   useEffect(() => { checkConnection() }, [checkConnection])
+
+  // ── Reset parse state on source switch ──
+  function switchSource(source: ImportSource) {
+    setActiveSource(source)
+    setParsedData(null)
+    setParseError(null)
+    setSelected(new Set())
+    setResults([])
+  }
 
   // ── Select/deselect all ──
   function buildAllKeys(data: ParsedData): ItemKey[] {
@@ -208,7 +235,7 @@ export default function ImportPage() {
     setPickerLoading(true)
     try {
       const tokenRes = await fetch('/api/auth/google/token')
-      if (!tokenRes.ok) { setStatus('disconnected'); return }
+      if (!tokenRes.ok) { setDriveStatus('disconnected'); return }
       const { accessToken } = await tokenRes.json()
 
       await loadScript('https://apis.google.com/js/api.js')
@@ -217,14 +244,12 @@ export default function ImportPage() {
       const w = window as any
       await new Promise<void>(resolve => w.gapi.load('picker', resolve))
 
-      // My Drive — full folder navigation from root
       const myDriveView = new w.google.picker.DocsView()
         .setIncludeFolders(true)
         .setSelectFolderEnabled(false)
         .setMimeTypes('application/vnd.google-apps.document,application/pdf')
         .setParent('root')
 
-      // Shared Drives
       const sharedDriveView = new w.google.picker.DocsView()
         .setIncludeFolders(true)
         .setSelectFolderEnabled(false)
@@ -241,7 +266,7 @@ export default function ImportPage() {
         .setCallback((data: { action: string; docs: Array<{ id: string; name: string; mimeType: string; lastEditedUtc: number }> }) => {
           if (data.action === 'picked') {
             const doc = data.docs[0]
-            handleSelectFile({
+            handleSelectDriveFile({
               id: doc.id,
               name: doc.name,
               mimeType: doc.mimeType,
@@ -260,8 +285,8 @@ export default function ImportPage() {
     }
   }
 
-  // ── Select file (resets parse state) ──
-  function handleSelectFile(file: DriveFile) {
+  // ── Select Drive file (resets parse state) ──
+  function handleSelectDriveFile(file: DriveFile) {
     setSelectedFile(file)
     setParsedData(null)
     setParseError(null)
@@ -269,32 +294,56 @@ export default function ImportPage() {
     setResults([])
   }
 
-  // ── Parse selected file ──
+  // ── Select local file ──
+  function handleLocalFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null
+    setLocalFile(file)
+    setParsedData(null)
+    setParseError(null)
+    setSelected(new Set())
+    setResults([])
+  }
+
+  // ── Active filename for display ──
+  const activeFileName = activeSource === 'drive' ? selectedFile?.name : localFile?.name
+
+  // ── Parse ──
   async function handleParse() {
-    if (!selectedFile) return
     setParsedData(null)
     setParseError(null)
     setSelected(new Set())
     setResults([])
     setParsing(true)
 
-    const res = await fetch('/api/drive/import', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileId: selectedFile.id, mimeType: selectedFile.mimeType }),
-    })
+    try {
+      let res: Response
 
-    setParsing(false)
+      if (activeSource === 'drive') {
+        if (!selectedFile) return
+        res = await fetch('/api/drive/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileId: selectedFile.id, mimeType: selectedFile.mimeType }),
+        })
+      } else {
+        if (!localFile) return
+        const formData = new FormData()
+        formData.append('file', localFile)
+        res = await fetch('/api/local/import', { method: 'POST', body: formData })
+      }
 
-    if (!res.ok) {
-      const err = await res.json()
-      setParseError(err.error ?? 'Failed to parse file')
-      return
+      if (!res.ok) {
+        const err = await res.json()
+        setParseError(err.error ?? 'Failed to parse file')
+        return
+      }
+
+      const data: ParsedData = await res.json()
+      setParsedData(data)
+      setSelected(new Set(buildAllKeys(data)))
+    } finally {
+      setParsing(false)
     }
-
-    const data: ParsedData = await res.json()
-    setParsedData(data)
-    setSelected(new Set(buildAllKeys(data)))
   }
 
   // ── Import selected ──
@@ -425,57 +474,10 @@ export default function ImportPage() {
   const importedKeys = new Set(results.map(r => r.key))
   const totalItems = parsedData ? buildAllKeys(parsedData).length : 0
   const successCount = results.filter(r => r.ok).length
+  const canParse = activeSource === 'drive' ? !!selectedFile : !!localFile
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
-  if (status === 'loading') {
-    return (
-      <div className="flex items-center gap-2 text-[var(--muted)] text-sm">
-        <Loader2 size={16} className="animate-spin" />
-        Checking Google Drive connection…
-      </div>
-    )
-  }
-
-  if (status === 'disconnected') {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--text)]">
-            <span className="neon-red">Import</span>
-          </h1>
-          <p className="text-sm text-[var(--muted)] mt-1">Pull career data from your Google Drive</p>
-        </div>
-
-        {oauthError && (
-          <div className="bg-red-900/20 border border-red-500/30 px-4 py-3 text-sm text-red-400 clip-corner">
-            OAuth failed — please try again.
-          </div>
-        )}
-
-        <div className="bg-[var(--surface)] border border-[var(--border)] clip-corner p-8 text-center space-y-4">
-          <CloudOff size={36} className="mx-auto text-[var(--muted)]" />
-          <div>
-            <p className="font-medium text-[var(--text)]">Connect Google Drive</p>
-            <p className="text-sm text-[var(--muted)] mt-1">
-              Grant read-only access so Claude can parse your documents
-            </p>
-          </div>
-          <a
-            href="/api/auth/google"
-            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium bg-[var(--accent)] text-white hover:brightness-110 clip-corner-sm transition-all"
-          >
-            Connect Google Drive
-          </a>
-          <p className="text-xs text-[var(--muted)]">
-            Only reads files you select. No write access requested.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
-  // ── Connected view ──
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -485,58 +487,163 @@ export default function ImportPage() {
             <span className="neon-red">Import</span>
           </h1>
           <p className="text-sm text-[var(--muted)] mt-1">
-            Pick a document from Google Drive — Claude will extract your career data
+            Import career data from Google Drive or a local file — Claude will extract structured data
           </p>
         </div>
+        {driveStatus === 'connected' && (
+          <button
+            onClick={checkConnection}
+            className="text-xs text-[var(--muted)] hover:text-[var(--accent)] transition-colors flex items-center gap-1"
+          >
+            <Link2 size={12} /> Drive connected
+          </button>
+        )}
+      </div>
+
+      {oauthError && (
+        <div className="bg-red-900/20 border border-red-500/30 px-4 py-3 text-sm text-red-400 clip-corner">
+          OAuth failed — please try again.
+        </div>
+      )}
+
+      {/* Source tabs */}
+      <div className="flex gap-1 border-b border-[var(--border)]">
         <button
-          onClick={checkConnection}
-          className="text-xs text-[var(--muted)] hover:text-[var(--accent)] transition-colors flex items-center gap-1"
+          onClick={() => switchSource('drive')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            activeSource === 'drive'
+              ? 'border-[var(--accent)] text-[var(--text)]'
+              : 'border-transparent text-[var(--muted)] hover:text-[var(--text)]'
+          }`}
         >
-          <Link2 size={12} /> Drive connected
+          <FolderOpen size={14} />
+          Google Drive
+        </button>
+        <button
+          onClick={() => switchSource('local')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            activeSource === 'local'
+              ? 'border-[var(--accent)] text-[var(--text)]'
+              : 'border-transparent text-[var(--muted)] hover:text-[var(--text)]'
+          }`}
+        >
+          <HardDrive size={14} />
+          Local File
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ── File picker ── */}
+        {/* ── Source panel ── */}
         <div className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--text)] uppercase tracking-wider">
             Document
           </h2>
 
-          {/* Selected file card */}
-          {selectedFile && (
-            <div className="border border-[var(--accent)]/50 bg-[var(--accent)]/5 clip-corner px-3 py-2.5">
-              <div className="flex items-center gap-2">
-                {selectedFile.mimeType === 'application/pdf' ? (
-                  <FileText size={14} className="shrink-0 text-red-400" />
-                ) : (
-                  <FileSearch size={14} className="shrink-0 text-blue-400" />
-                )}
-                <span className="truncate font-medium text-sm text-[var(--text)]">{selectedFile.name}</span>
-              </div>
-              <p className="text-[10px] text-[var(--muted)] mt-0.5 pl-5">
-                {selectedFile.mimeType === 'application/pdf' ? 'PDF' : 'Google Doc'} ·{' '}
-                {formatModified(selectedFile.modifiedTime)}
-              </p>
-            </div>
+          {/* ── Google Drive tab ── */}
+          {activeSource === 'drive' && (
+            <>
+              {driveStatus === 'loading' && (
+                <div className="flex items-center gap-2 text-[var(--muted)] text-sm">
+                  <Loader2 size={14} className="animate-spin" />
+                  Checking connection…
+                </div>
+              )}
+
+              {driveStatus === 'disconnected' && (
+                <div className="bg-[var(--surface)] border border-[var(--border)] clip-corner p-5 space-y-3 text-center">
+                  <CloudOff size={28} className="mx-auto text-[var(--muted)]" />
+                  <div>
+                    <p className="font-medium text-sm text-[var(--text)]">Connect Google Drive</p>
+                    <p className="text-xs text-[var(--muted)] mt-1">
+                      Grant read-only access so Claude can parse your documents
+                    </p>
+                  </div>
+                  <a
+                    href="/api/auth/google"
+                    className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium bg-[var(--accent)] text-white hover:brightness-110 clip-corner-sm transition-all"
+                  >
+                    Connect Google Drive
+                  </a>
+                </div>
+              )}
+
+              {driveStatus === 'connected' && (
+                <>
+                  {selectedFile && (
+                    <div className="border border-[var(--accent)]/50 bg-[var(--accent)]/5 clip-corner px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        {selectedFile.mimeType === 'application/pdf' ? (
+                          <FileText size={14} className="shrink-0 text-red-400" />
+                        ) : (
+                          <FileSearch size={14} className="shrink-0 text-blue-400" />
+                        )}
+                        <span className="truncate font-medium text-sm text-[var(--text)]">{selectedFile.name}</span>
+                      </div>
+                      <p className="text-[10px] text-[var(--muted)] mt-0.5 pl-5">
+                        {selectedFile.mimeType === 'application/pdf' ? 'PDF' : 'Google Doc'} ·{' '}
+                        {formatModified(selectedFile.modifiedTime)}
+                      </p>
+                    </div>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    onClick={openPicker}
+                    disabled={pickerLoading || parsing}
+                    className="w-full"
+                  >
+                    {pickerLoading ? (
+                      <><Loader2 size={14} className="animate-spin mr-2" /> Opening Drive…</>
+                    ) : (
+                      <><FolderOpen size={14} className="mr-2" />{selectedFile ? 'Choose a Different File' : 'Browse Google Drive'}</>
+                    )}
+                  </Button>
+                </>
+              )}
+            </>
           )}
 
-          <Button
-            variant="outline"
-            onClick={openPicker}
-            disabled={pickerLoading || parsing}
-            className="w-full"
-          >
-            {pickerLoading ? (
-              <><Loader2 size={14} className="animate-spin mr-2" /> Opening Drive…</>
-            ) : (
-              <><FolderOpen size={14} className="mr-2" />{selectedFile ? 'Choose a Different File' : 'Browse Google Drive'}</>
-            )}
-          </Button>
+          {/* ── Local File tab ── */}
+          {activeSource === 'local' && (
+            <>
+              {localFile && (
+                <div className="border border-[var(--accent)]/50 bg-[var(--accent)]/5 clip-corner px-3 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <FileText size={14} className="shrink-0 text-red-400" />
+                    <span className="truncate font-medium text-sm text-[var(--text)]">{localFile.name}</span>
+                  </div>
+                  <p className="text-[10px] text-[var(--muted)] mt-0.5 pl-5">
+                    {formatBytes(localFile.size)}
+                  </p>
+                </div>
+              )}
 
-          {selectedFile && !parsing && (
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.txt,.md,.csv,.rtf,.json"
+                className="hidden"
+                onChange={handleLocalFileChange}
+              />
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={parsing}
+                className="w-full"
+              >
+                <Upload size={14} className="mr-2" />
+                {localFile ? 'Choose a Different File' : 'Browse Local Files'}
+              </Button>
+              <p className="text-[10px] text-[var(--muted)]">
+                Supports PDF, Word (.docx), plain text, Markdown, CSV
+              </p>
+            </>
+          )}
+
+          {/* Parse button — shared */}
+          {canParse && !parsing && (
             <Button onClick={handleParse} className="w-full">
-              Parse "{selectedFile.name}"
+              Parse &ldquo;{activeSource === 'drive' ? selectedFile?.name : localFile?.name}&rdquo;
             </Button>
           )}
         </div>
@@ -547,7 +654,7 @@ export default function ImportPage() {
           {parsing && (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-[var(--muted)]">
               <Loader2 size={28} className="animate-spin text-[var(--accent)]" />
-              <p className="text-sm">Claude is reading <span className="text-[var(--text)]">{selectedFile?.name}</span>…</p>
+              <p className="text-sm">Claude is reading <span className="text-[var(--text)]">{activeFileName}</span>…</p>
               <p className="text-xs">This usually takes 10–20 seconds</p>
             </div>
           )}
@@ -562,11 +669,15 @@ export default function ImportPage() {
           {/* Empty state */}
           {!parsing && !parsedData && !parseError && (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-[var(--muted)]">
-              <FolderOpen size={32} />
+              {activeSource === 'drive' ? <FolderOpen size={32} /> : <HardDrive size={32} />}
               <p className="text-sm">
-                {selectedFile
+                {canParse
                   ? `Click "Parse" to extract data from this document`
-                  : 'Browse Google Drive to select a document'}
+                  : activeSource === 'drive'
+                    ? driveStatus === 'disconnected'
+                      ? 'Connect Google Drive to browse your documents'
+                      : 'Browse Google Drive to select a document'
+                    : 'Browse your local files to select a document'}
               </p>
             </div>
           )}

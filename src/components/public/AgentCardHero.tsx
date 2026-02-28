@@ -3,9 +3,9 @@ import { ChevronRight, Terminal, Github, Linkedin, ExternalLink } from 'lucide-r
 import { siteConfig } from '@/lib/site-config'
 import { TacticalGrid } from '@/components/public/TacticalGrid'
 
-export function AgentCardHero() {
+export function AgentCardHero({ title }: { title?: string }) {
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+    <section className="relative min-h-[70vh] flex items-center overflow-hidden">
       <TacticalGrid />
 
       {/* Gradient overlays */}
@@ -42,23 +42,27 @@ export function AgentCardHero() {
           </div>
 
           {/* Title */}
-          <div className="flex items-center gap-3 mt-4 mb-4 anim-fade-up anim-delay-2">
-            <ChevronRight className="w-4 h-4 text-[var(--accent)] shrink-0" />
-            <span
-              className="text-[var(--muted)] tracking-[0.15em]"
-              style={{ fontFamily: 'var(--font-mono-val, monospace)', fontSize: 'clamp(0.85rem, 2vw, 1.05rem)' }}
-            >
-              {siteConfig.title}
-            </span>
-          </div>
+          {title && (
+            <div className="flex items-center gap-3 mt-4 mb-4 anim-fade-up anim-delay-2">
+              <ChevronRight className="w-4 h-4 text-[var(--accent)] shrink-0" />
+              <span
+                className="text-[var(--muted)] tracking-[0.15em]"
+                style={{ fontFamily: 'var(--font-mono-val, monospace)', fontSize: 'clamp(0.85rem, 2vw, 1.05rem)' }}
+              >
+                {title}
+              </span>
+            </div>
+          )}
 
           {/* Tagline */}
-          <p
-            className="text-[var(--muted)]/80 max-w-lg mb-8 anim-fade-up anim-delay-3"
-            style={{ fontSize: '1rem', fontFamily: 'var(--font-rajdhani, sans-serif)' }}
-          >
-            {siteConfig.tagline} Turning complex infrastructure challenges into elegant, battle-tested solutions.
-          </p>
+          {siteConfig.tagline && (
+            <p
+              className="text-[var(--muted)]/80 max-w-lg mb-8 anim-fade-up anim-delay-3"
+              style={{ fontSize: '1rem', fontFamily: 'var(--font-rajdhani, sans-serif)' }}
+            >
+              {siteConfig.tagline}
+            </p>
+          )}
 
           {/* CTA Buttons */}
           <div className="flex flex-wrap gap-4 anim-fade-up anim-delay-4">

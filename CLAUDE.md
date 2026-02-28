@@ -1,5 +1,7 @@
 # Resume Website — Project Guide
 
+> **Maintenance Rule**: This file is the authoritative project guide. Whenever new features are added, architecture changes, or conventions evolve, update this file to reflect the current state of the project. Do not let it go stale.
+
 ## Vision
 
 This is a personal website with **two distinct profile modes** that a visitor can toggle between:
@@ -72,9 +74,17 @@ A **Loadout** is a named, curated subset of archive data assembled for a specifi
 Loadouts are managed at `/admin/loadouts`. Each loadout can be exported as a one-page PDF.
 
 ### Import Flow (AI-powered)
-The Import page (`/admin/import`) connects to Google Drive (OAuth). You pick a document (resume, bio, freeform text blob, etc.) and Claude parses it into structured data across all archive categories. You then review the parsed items, select what to keep, and commit them to the archive. This is the primary way to get data in quickly.
+The Import page (`/admin/import`) supports two source tabs:
 
-**To add text blob import** (future): the same `/api/drive/import` API can be extended to accept raw text directly, bypassing the Drive picker.
+- **Google Drive** — OAuth-connected. Browse Google Docs or PDFs from your Drive. Requires a one-time OAuth flow.
+- **Local File** — No auth needed. Pick a file from your machine (PDF, .docx, .txt, .md, .csv). Uploaded directly to the server for parsing.
+
+Both paths send the document to Claude via the same extraction prompt and return the same structured JSON. You review the parsed items, select what to keep, and commit them to the archive.
+
+**API routes:**
+- `POST /api/drive/import` — fetches file from Drive, sends to Claude
+- `POST /api/local/import` — accepts `multipart/form-data`, handles PDF (base64), .docx (mammoth extraction), or plain text
+- Shared extraction prompt lives in `src/lib/import-prompt.ts`
 
 ### Export
 The Export page (`/admin/export`) lists all loadouts and lets you download a one-page PDF for any of them. PDFs are generated via `@react-pdf/renderer` server-side at `/api/pdf/[loadoutId]`. Multiple PDF templates are available (e.g., `ats-classic`), each with an ATS score rating.
